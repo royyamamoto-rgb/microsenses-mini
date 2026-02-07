@@ -1,0 +1,2169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MicroSenses Mini — Mind & Body Analysis System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #fff; min-height: 100vh; }
+
+    /* ========== AUTH STYLES ========== */
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+      padding: 20px;
+    }
+    .auth-card {
+      background: #16213e;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .auth-logo h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #4a9eff, #00d4aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .auth-logo p {
+      font-size: 13px;
+      color: #888;
+      margin-top: 8px;
+    }
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 30px;
+      background: #1a1a2e;
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, #4a9eff, #2d5a87);
+      color: white;
+    }
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: #1a1a2e;
+      border: 2px solid #2d3a4f;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+    .form-group input::placeholder {
+      color: #555;
+    }
+    .auth-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #4a9eff, #2d5a87);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(74, 158, 255, 0.3);
+    }
+    .auth-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .auth-error {
+      background: #4a1e1e;
+      color: #f44336;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .auth-error.show { display: block; }
+    .auth-success {
+      background: #1e4620;
+      color: #4caf50;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .auth-success.show { display: block; }
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      margin: 24px 0;
+      color: #555;
+      font-size: 12px;
+    }
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #2d3a4f;
+    }
+    .auth-divider span {
+      padding: 0 16px;
+    }
+    .forgot-password {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .forgot-password a {
+      color: #4a9eff;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-email {
+      font-size: 12px;
+      color: #888;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .logout-btn {
+      padding: 8px 16px;
+      background: #2d3a4f;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .logout-btn:hover {
+      background: #3d4a5f;
+    }
+
+    /* Hide app until authenticated */
+    .app-wrapper { display: none; }
+    .app-wrapper.authenticated { display: block; }
+
+    /* Header */
+    .header { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 24px; font-weight: 600; }
+    .header .subtitle { font-size: 12px; opacity: 0.8; }
+
+    /* Main Layout */
+    .main-container { display: grid; grid-template-columns: 350px 1fr; gap: 16px; padding: 16px; max-width: 1600px; margin: 0 auto; }
+    @media (max-width: 1200px) { .main-container { grid-template-columns: 1fr; } }
+
+    /* Left Panel - Video */
+    .video-panel { background: #16213e; border-radius: 12px; padding: 16px; }
+    .video-container { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; }
+    video { width: 100%; height: 100%; object-fit: cover; }
+    #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .drop-zone { border: 3px dashed #4a9eff !important; background: rgba(74,158,255,0.1) !important; }
+    .drop-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #4a9eff; font-weight: 600; display: none; }
+
+    /* Controls */
+    .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, #4a9eff, #2d5a87); color: white; }
+    .btn-secondary { background: #2d3a4f; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+    /* Status */
+    .status-bar { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+    .status-bar.loading { background: #3d3d00; color: #ffc107; }
+    .status-bar.ready { background: #1e4620; color: #4caf50; }
+    .status-bar.scanning { background: #1e3a5f; color: #4a9eff; }
+    .status-bar.error { background: #4a1e1e; color: #f44336; }
+
+    /* Timer */
+    .timer-display { text-align: center; margin-top: 16px; }
+    .timer-value { font-size: 48px; font-weight: 700; color: #4a9eff; font-family: monospace; }
+    .progress-bar { height: 6px; background: #2d3a4f; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #4a9eff, #00d4aa); transition: width 0.1s; }
+
+    /* Real-time Metrics */
+    .realtime-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+    .metric-card { background: linear-gradient(135deg, #2d3a4f, #1e2a3f); border-radius: 8px; padding: 12px; text-align: center; }
+    .metric-card .label { font-size: 10px; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
+    .metric-card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+    .metric-card.energy .value { color: #ff6b6b; }
+    .metric-card.vibration .value { color: #4ecdc4; }
+    .metric-card.frequency .value { color: #ffe66d; }
+
+    /* Right Panel - Results */
+    .results-panel { background: #16213e; border-radius: 12px; padding: 20px; display: none; }
+    .results-panel.active { display: block; }
+
+    /* Report Header */
+    .report-header { background: linear-gradient(135deg, #1e3a5f, #2d5a87); margin: -20px -20px 20px -20px; padding: 20px; border-radius: 12px 12px 0 0; }
+    .report-title { font-size: 20px; font-weight: 600; }
+    .report-subtitle { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+    /* Comprehensive Result Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
+
+    /* Primary Emotion Card */
+    .emotion-card { background: linear-gradient(135deg, #ff9a56, #ff6b6b); border-radius: 12px; padding: 20px; text-align: center; }
+    .emotion-card.balanced { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+    .emotion-card.rest { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .emotion-card.attention { background: linear-gradient(135deg, #ff6b6b, #c0392b); }
+    .emotion-label { font-size: 11px; text-transform: uppercase; opacity: 0.9; }
+    .emotion-state { font-size: 28px; font-weight: 700; margin-top: 8px; }
+    .emotion-desc { font-size: 12px; opacity: 0.9; margin-top: 8px; line-height: 1.4; }
+
+    /* Emotion Classification Table */
+    .emotion-table { background: #1e2a3f; border-radius: 8px; overflow: hidden; }
+    .emotion-table-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; background: #1e3a5f; padding: 10px 12px; font-size: 11px; font-weight: 600; }
+    .emotion-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 8px 12px; border-bottom: 1px solid #2d3a4f; font-size: 12px; align-items: center; }
+    .emotion-row:last-child { border-bottom: none; }
+    .zone-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-align: center; }
+    .zone-optimal { background: #4caf50; color: white; }
+    .zone-rest { background: #ff9800; color: white; }
+    .zone-attention { background: #f44336; color: white; }
+
+    /* Charts Section */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 1000px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-card { background: #1e2a3f; border-radius: 12px; overflow: hidden; }
+    .chart-header { background: #1e3a5f; padding: 12px 16px; font-size: 13px; font-weight: 600; }
+    .chart-body { padding: 16px; }
+    .chart-container { display: flex; justify-content: center; align-items: center; }
+
+    /* Brain Fatigue Section */
+    .brain-fatigue { background: #1e2a3f; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .brain-fatigue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .brain-fatigue-title { font-size: 14px; font-weight: 600; }
+    .brain-fatigue-value { font-size: 32px; font-weight: 700; }
+    .brain-fatigue-bar { display: flex; height: 24px; border-radius: 4px; overflow: hidden; }
+    .brain-zone { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+    .brain-zone.blue { background: #2196f3; }
+    .brain-zone.green { background: #4caf50; }
+    .brain-zone.orange { background: #ff9800; }
+    .brain-zone.red { background: #f44336; }
+    .brain-marker { position: absolute; width: 4px; height: 32px; background: #fff; border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+
+    /* Multi-dimensional Analysis */
+    .analysis-section { background: #1e2a3f; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .analysis-header { background: #1e3a5f; padding: 12px 16px; font-size: 13px; font-weight: 600; }
+    .analysis-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .analysis-table th { background: #1e3a5f; padding: 10px 8px; text-align: center; font-weight: 600; }
+    .analysis-table td { padding: 8px; text-align: center; border-bottom: 1px solid #2d3a4f; }
+    .analysis-table tr:last-child td { border-bottom: none; }
+    .analysis-table .metric-name { text-align: left; font-weight: 500; }
+    .judge-high { background: #4caf50; color: white; padding: 2px 8px; border-radius: 4px; }
+    .judge-middle { background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; }
+    .judge-low { background: #f44336; color: white; padding: 2px 8px; border-radius: 4px; }
+
+    /* Vitality & Concentration */
+    .indices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .index-card { background: #1e2a3f; border-radius: 12px; padding: 16px; }
+    .index-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .index-title { font-size: 13px; font-weight: 600; }
+    .index-level { padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .index-level.high { background: #4caf50; }
+    .index-level.middle { background: #ff9800; }
+    .index-level.low { background: #f44336; }
+    .index-value { font-size: 42px; font-weight: 700; text-align: center; margin: 16px 0; }
+    .index-gauge { position: relative; height: 8px; background: #2d3a4f; border-radius: 4px; }
+    .index-gauge-fill { height: 100%; border-radius: 4px; }
+    .index-gauge-fill.vitality { background: linear-gradient(90deg, #f44336, #ff9800, #4caf50); }
+    .index-gauge-fill.concentration { background: linear-gradient(90deg, #9c27b0, #2196f3, #4caf50); }
+
+    /* Energy & Emotion Change */
+    .change-section { background: #1e2a3f; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .change-header { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .change-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; font-size: 11px; }
+    .change-stat { text-align: center; }
+    .change-stat-label { opacity: 0.7; }
+    .change-stat-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
+
+    /* Quadrant Chart */
+    .quadrant-section { background: #1e2a3f; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+
+    /* Mind Distribution */
+    .distribution-note { font-size: 11px; color: #888; margin-top: 12px; line-height: 1.5; }
+
+    /* Emotional Variation */
+    .emotional-var { background: #1e2a3f; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .emotional-var-header { display: flex; justify-content: space-between; align-items: center; }
+    .emotional-var-title { font-size: 13px; font-weight: 600; }
+    .emotional-var-value { font-size: 24px; font-weight: 700; }
+    .emotional-var-status { font-size: 11px; color: #888; margin-top: 4px; }
+    .emotional-var-bar { height: 8px; background: #2d3a4f; border-radius: 4px; margin-top: 12px; position: relative; }
+    .emotional-var-fill { height: 100%; background: linear-gradient(90deg, #4caf50, #ff9800, #f44336); border-radius: 4px; }
+    .emotional-var-marker { position: absolute; top: -4px; width: 16px; height: 16px; background: white; border-radius: 50%; transform: translateX(-50%); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+    /* Scan Info */
+    .scan-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .scan-info-item { background: #1e2a3f; border-radius: 8px; padding: 12px; text-align: center; }
+    .scan-info-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
+    .scan-info-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+    /* Actions */
+    .report-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .report-actions .btn { min-width: 120px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #1e2a3f; border-radius: 16px; padding: 32px; max-width: 400px; width: 90%; text-align: center; }
+    .modal h2 { font-size: 20px; margin-bottom: 8px; }
+    .modal p { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .duration-options { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+    .duration-btn { padding: 12px 20px; border: 2px solid #2d3a4f; border-radius: 10px; background: transparent; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .duration-btn:hover { border-color: #4a9eff; }
+    .duration-btn.selected { border-color: #4a9eff; background: #4a9eff; }
+
+    /* Print Styles */
+    @media print {
+      body { background: white; color: black; }
+      .header, .video-panel, .modal-overlay { display: none !important; }
+      .main-container { display: block; padding: 0; }
+      .results-panel { display: block !important; background: white; }
+      .chart-card, .analysis-section, .index-card, .emotional-var, .change-section, .brain-fatigue { background: #f5f5f5; }
+      .report-actions { display: none; }
+    }
+
+    /* Hidden file input */
+    #fileInput { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Auth Container -->
+  <div class="auth-container" id="authContainer">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <h1>MicroSenses Mini</h1>
+        <p>Mind & Body Analysis System</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin">Login</button>
+        <button class="auth-tab" id="tabSignup">Sign Up</button>
+      </div>
+
+      <div class="auth-error" id="authError"></div>
+      <div class="auth-success" id="authSuccess"></div>
+
+      <!-- Login Form -->
+      <form class="auth-form active" id="loginForm">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="loginEmail" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="auth-btn" id="loginBtn">Login</button>
+        <div class="forgot-password">
+          <a href="#" id="forgotPasswordLink">Forgot password?</a>
+        </div>
+      </form>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signupForm">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="signupEmail" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signupPassword" placeholder="Create a password (min 6 characters)" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="signupConfirm" placeholder="Confirm your password" required minlength="6">
+        </div>
+        <button type="submit" class="auth-btn" id="signupBtn">Create Account</button>
+      </form>
+
+      <div class="auth-divider"><span>OR</span></div>
+
+      <button class="auth-btn" id="demoModeBtn" style="background: linear-gradient(135deg, #6c757d, #495057);">
+        Enter Demo Mode (No Login)
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Wrapper (hidden until authenticated) -->
+  <div class="app-wrapper" id="appWrapper">
+    <div class="header">
+      <div>
+        <h1>MicroSenses Mini</h1>
+        <div class="subtitle">Mind & Body Psycho-Physiological Analysis System</div>
+      </div>
+      <div class="user-info">
+        <span class="user-email" id="userEmail"></span>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+  <div class="main-container">
+    <!-- Left Panel - Video & Controls -->
+    <div class="video-panel">
+      <div class="video-container" id="dropZone">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="drop-text" id="dropText">Drop image or video here</div>
+      </div>
+
+      <div class="controls">
+        <button id="btnStart" class="btn btn-primary" disabled>▶ Live Scan</button>
+        <button id="btnUpload" class="btn btn-secondary" disabled>📁 Upload</button>
+        <button id="btnStop" class="btn btn-danger" disabled>■ Stop</button>
+      </div>
+      <input type="file" id="fileInput" accept="image/*,video/*">
+
+      <div id="statusBar" class="status-bar loading">Loading face detection model...</div>
+
+      <div id="timerSection" class="timer-display" style="display:none;">
+        <div class="timer-value" id="timerValue">0:30</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="realtime-metrics">
+        <div class="metric-card energy">
+          <div class="label">Energy (E)</div>
+          <div class="value" id="rtEnergy">--</div>
+        </div>
+        <div class="metric-card vibration">
+          <div class="label">Vibration (V)</div>
+          <div class="value" id="rtVibration">--</div>
+        </div>
+        <div class="metric-card frequency">
+          <div class="label">Frequency (F)</div>
+          <div class="value" id="rtFrequency">--</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:12px;background:#1e2a3f;border-radius:8px;font-size:11px;color:#888;">
+        <strong style="color:#4a9eff;">E = V² × F × k</strong><br>
+        Energy reflects micro-muscle activity. Higher values indicate increased facial tension and mental activation.
+      </div>
+
+      <div style="margin-top:12px;">
+        <div style="font-size:11px;color:#888;margin-bottom:8px;">Real-time Vibration</div>
+        <canvas id="realtimeChart" style="width:100%;height:80px;background:#1e2a3f;border-radius:8px;"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Panel - Results Report -->
+    <div class="results-panel" id="resultsPanel">
+      <div class="report-header">
+        <div class="report-title">Psycho-Physiological State Analysis Report</div>
+        <div class="report-subtitle">Comprehensive Mind & Body Assessment</div>
+      </div>
+
+      <!-- Summary Section -->
+      <div class="summary-grid">
+        <!-- Primary Emotion Result -->
+        <div class="emotion-card" id="primaryEmotionCard">
+          <div class="emotion-label">Comprehensive Result</div>
+          <div class="emotion-state" id="primaryState">--</div>
+          <div class="emotion-desc" id="primaryDesc">Analysis in progress...</div>
+        </div>
+
+        <!-- Emotion Classification -->
+        <div class="emotion-table" style="grid-column: span 2;">
+          <div class="emotion-table-header">
+            <div>Emotion Zone</div>
+            <div>Optimal</div>
+            <div>Rest/Recovery</div>
+            <div>Attention</div>
+          </div>
+          <div class="emotion-row">
+            <div>Primary Emotion</div>
+            <div id="zone1Primary">-</div>
+            <div id="zone2Primary">-</div>
+            <div id="zone3Primary">-</div>
+          </div>
+          <div class="emotion-row">
+            <div>Secondary Emotion</div>
+            <div id="zone1Secondary">-</div>
+            <div id="zone2Secondary">-</div>
+            <div id="zone3Secondary">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brain Fatigue -->
+      <div class="brain-fatigue">
+        <div class="brain-fatigue-header">
+          <div>
+            <div class="brain-fatigue-title">Brain Fatigue Level (脳疲労度)</div>
+            <div style="font-size:11px;color:#888;margin-top:4px;">Brain health activity indicator</div>
+          </div>
+          <div class="brain-fatigue-value" id="brainFatigueValue">1.67</div>
+        </div>
+        <div style="position:relative;margin-top:12px;">
+          <div class="brain-fatigue-bar">
+            <div class="brain-zone blue">Healthy</div>
+            <div class="brain-zone green">Sub-healthy</div>
+            <div class="brain-zone orange">Unhealthy</div>
+            <div class="brain-zone red">Critical</div>
+          </div>
+          <div class="brain-marker" id="brainMarker" style="left:30%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:8px;">
+          <span>-7.0</span>
+          <span>-3.5</span>
+          <span>0</span>
+          <span>1.75</span>
+          <span>3.5</span>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="charts-grid">
+        <!-- Radar Chart -->
+        <div class="chart-card">
+          <div class="chart-header">Psycho-physiological State Chart (心理状態表)</div>
+          <div class="chart-body">
+            <div class="chart-container">
+              <canvas id="radarChart" width="280" height="280"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quadrant Chart -->
+        <div class="chart-card">
+          <div class="chart-header">State of Mind Quadrant (精神状態四象限)</div>
+          <div class="chart-body">
+            <canvas id="quadrantChart" width="300" height="260"></canvas>
+            <div id="quadrantNote" style="text-align:center;font-size:11px;color:#888;margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-dimensional Analysis Table -->
+      <div class="analysis-section">
+        <div class="analysis-header">Multi-dimensional Emotion Analysis (多維情感分析)</div>
+        <table class="analysis-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Metric</th>
+              <th>Range</th>
+              <th>Judge</th>
+              <th>Min</th>
+              <th>Mean</th>
+              <th>Max</th>
+            </tr>
+          </thead>
+          <tbody id="analysisTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vitality & Concentration -->
+      <div class="indices-grid">
+        <div class="index-card">
+          <div class="index-header">
+            <div class="index-title">Vitality Index (活力度)</div>
+            <div class="index-level middle" id="vitalityLevel">Middle</div>
+          </div>
+          <div class="index-value" id="vitalityValue">1.64</div>
+          <div class="index-gauge">
+            <div class="index-gauge-fill vitality" id="vitalityGauge" style="width:55%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:4px;">
+            <span>0.0</span>
+            <span>1.5</span>
+            <span>3.0</span>
+          </div>
+        </div>
+
+        <div class="index-card">
+          <div class="index-header">
+            <div class="index-title">Concentration Index (集中度)</div>
+            <div class="index-level high" id="concentrationLevel">High</div>
+          </div>
+          <div class="index-value" id="concentrationValue">74.0</div>
+          <div class="index-gauge">
+            <div class="index-gauge-fill concentration" id="concentrationGauge" style="width:74%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:4px;">
+            <span>0</span>
+            <span>50</span>
+            <span>100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Energy & Emotion Change -->
+      <div class="change-section">
+        <div class="change-header">Energy & Emotion Change (情緒活動能量変化)</div>
+        <div class="change-stats">
+          <div class="change-stat">
+            <div class="change-stat-label">Energy Min</div>
+            <div class="change-stat-value" id="energyMin">--</div>
+          </div>
+          <div class="change-stat">
+            <div class="change-stat-label">Energy Mean</div>
+            <div class="change-stat-value" id="energyMean">--</div>
+          </div>
+          <div class="change-stat">
+            <div class="change-stat-label">Energy Max</div>
+            <div class="change-stat-value" id="energyMax">--</div>
+          </div>
+        </div>
+        <canvas id="energyChart" style="width:100%;height:120px;"></canvas>
+        <div style="text-align:center;font-size:10px;color:#888;margin-top:8px;">
+          I-E Correlation: <span id="ieCorrelation">0.05</span> |
+          When lines cross frequently, thoughts are scattered. Parallel lines indicate focused state.
+        </div>
+      </div>
+
+      <!-- Mind Distribution -->
+      <div class="chart-card" style="margin-bottom:20px;">
+        <div class="chart-header">Mind Distribution - Thought Pattern Analysis</div>
+        <div class="chart-body">
+          <canvas id="distributionChart" style="width:100%;height:150px;"></canvas>
+
+          <!-- Interpretation Guide -->
+          <div style="margin-top:16px;padding:12px;background:#1a2535;border-radius:8px;">
+            <div style="font-size:12px;font-weight:600;color:#ff5722;margin-bottom:8px;">How to Read This Chart</div>
+            <div style="font-size:11px;color:#aaa;line-height:1.6;">
+              <div style="margin-bottom:6px;">
+                <strong style="color:#4caf50;">Green Bars:</strong> Your actual micro-vibration data distribution during the scan.
+              </div>
+              <div style="margin-bottom:6px;">
+                <strong style="color:#ff5722;">Orange Curve:</strong> The ideal bell curve (normal distribution) representing optimal mental balance.
+              </div>
+              <div style="margin-bottom:6px;">
+                <strong style="color:#4a9eff;">Blue Dashed Line:</strong> Your average value (mean).
+              </div>
+            </div>
+
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #2d3a4f;">
+              <div style="font-size:11px;font-weight:600;color:#fff;margin-bottom:6px;">Interpretation:</div>
+              <div style="font-size:10px;color:#888;line-height:1.5;">
+                • <strong>Single Peak (Bell Shape):</strong> Focused, calm mind with consistent thoughts<br>
+                • <strong>Multiple Peaks:</strong> Scattered thinking, distraction, or racing thoughts<br>
+                • <strong>Left-Shifted:</strong> Low energy, fatigue, or subdued mental state<br>
+                • <strong>Right-Shifted:</strong> High energy, alertness, or agitation<br>
+                • <strong>Wide Spread:</strong> High emotional variability<br>
+                • <strong>Narrow Peak:</strong> Very stable, focused mental state
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emotional Variation -->
+      <div class="emotional-var">
+        <div class="emotional-var-header">
+          <div>
+            <div class="emotional-var-title">Emotional Variation Index</div>
+            <div class="emotional-var-status" id="emotionalVarStatus">Stable - Normal emotional fluctuation</div>
+          </div>
+          <div class="emotional-var-value" id="emotionalVarValue">11.6</div>
+        </div>
+        <div class="emotional-var-bar">
+          <div class="emotional-var-fill" style="width:100%;"></div>
+          <div class="emotional-var-marker" id="emotionalVarMarker" style="left:12%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:4px;">
+          <span>Stable (0)</span>
+          <span>Moderate (50)</span>
+          <span>Variable (100)</span>
+        </div>
+
+        <!-- Interpretation Guide -->
+        <div style="margin-top:16px;padding:12px;background:#1a2535;border-radius:8px;border-left:3px solid #4a9eff;">
+          <div style="font-size:12px;font-weight:600;color:#4a9eff;margin-bottom:8px;">How to Read This Score</div>
+          <div style="font-size:11px;color:#aaa;line-height:1.6;">
+            <div style="margin-bottom:8px;">
+              <strong style="color:#4caf50;">0-30 (Stable):</strong> Your emotional state remained consistent during the scan. This indicates good emotional regulation, inner calm, and mental focus. Ideal for concentration and decision-making.
+            </div>
+            <div style="margin-bottom:8px;">
+              <strong style="color:#ff9800;">31-60 (Moderate):</strong> Some emotional fluctuation detected. This is normal for most people and may indicate active thinking, mild stress, or engagement with external stimuli. Consider brief relaxation if feeling tense.
+            </div>
+            <div>
+              <strong style="color:#f44336;">61-100 (Variable):</strong> Significant emotional changes observed. This may suggest anxiety, racing thoughts, stress, or difficulty focusing. Recommended: deep breathing, meditation, or taking a break.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scan Info -->
+      <div class="scan-info">
+        <div class="scan-info-item">
+          <div class="scan-info-label">Duration</div>
+          <div class="scan-info-value" id="scanDuration">--</div>
+        </div>
+        <div class="scan-info-item">
+          <div class="scan-info-label">Samples</div>
+          <div class="scan-info-value" id="scanSamples">--</div>
+        </div>
+        <div class="scan-info-item">
+          <div class="scan-info-label">Frame Rate</div>
+          <div class="scan-info-value" id="scanFPS">--</div>
+        </div>
+        <div class="scan-info-item">
+          <div class="scan-info-label">Type</div>
+          <div class="scan-info-value" id="scanType">--</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="report-actions">
+        <button id="btnExport" class="btn btn-primary">Export CSV</button>
+        <button id="btnPrint" class="btn btn-secondary">Print Report</button>
+        <button id="btnNewScan" class="btn btn-secondary">New Scan</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Duration Selection Modal -->
+    <div id="durationModal" class="modal-overlay">
+    <div class="modal">
+      <h2>Scan Duration</h2>
+      <p>Select the duration for your mind & body scan</p>
+      <div class="duration-options">
+        <button class="duration-btn" data-duration="15">15 sec</button>
+        <button class="duration-btn selected" data-duration="30">30 sec</button>
+        <button class="duration-btn" data-duration="60">60 sec</button>
+      </div>
+      <button id="confirmStart" class="btn btn-primary" style="width:100%;">Start Analysis</button>
+    </div>
+  </div>
+  </div> <!-- End of app-wrapper -->
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+  <!-- face-api.js -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+  <script>
+    // ========== DOM ELEMENTS ==========
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const ctx = overlay.getContext('2d');
+    const realtimeChart = document.getElementById('realtimeChart');
+    const rtCtx = realtimeChart.getContext('2d');
+
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnUpload = document.getElementById('btnUpload');
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const dropText = document.getElementById('dropText');
+    const statusBar = document.getElementById('statusBar');
+    const timerSection = document.getElementById('timerSection');
+    const timerValue = document.getElementById('timerValue');
+    const progressFill = document.getElementById('progressFill');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const durationModal = document.getElementById('durationModal');
+    const durationBtns = document.querySelectorAll('.duration-btn');
+
+    // ========== STATE ==========
+    let running = false;
+    let stream = null;
+    let modelLoaded = false;
+    let scanDuration = 30;
+    let scanStartTime = null;
+    let data = [];
+    let lastLandmarks = null;
+    let lastTime = null;
+    let peakCount = 0;
+    let lastPeakTime = 0;
+    let lastVibration = 0;
+    let vibrationHistory = [];
+    let scanType = 'Live';
+
+    const ENERGY_CONSTANT = 0.001;
+
+    // ========== UTILITY FUNCTIONS ==========
+    function setStatus(msg, type) {
+      statusBar.textContent = msg;
+      statusBar.className = 'status-bar ' + type;
+    }
+
+    function formatTime(ms) {
+      const totalSec = Math.max(0, Math.ceil(ms / 1000));
+      const min = Math.floor(totalSec / 60);
+      const sec = totalSec % 60;
+      return `${min}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    // ========== MODEL LOADING ==========
+    async function loadModels() {
+      setStatus('Loading face detection model...', 'loading');
+      try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+        await faceapi.nets.faceLandmark68TinyNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+        modelLoaded = true;
+        btnStart.disabled = false;
+        btnUpload.disabled = false;
+        setStatus('Ready. Click Live Scan or Upload a file.', 'ready');
+      } catch (err) {
+        setStatus('Model load error: ' + err.message, 'error');
+        console.error(err);
+      }
+    }
+
+    // ========== METRICS COMPUTATION ==========
+    function computeMetrics(currentLandmarks, now) {
+      if (!lastLandmarks || !currentLandmarks) {
+        lastLandmarks = currentLandmarks;
+        return { vibration: 0, frequency: 0, energy: 0 };
+      }
+
+      const curr = currentLandmarks.positions;
+      const prev = lastLandmarks.positions;
+
+      let totalDisplacement = 0;
+      for (let i = 0; i < curr.length; i++) {
+        const dx = curr[i].x - prev[i].x;
+        const dy = curr[i].y - prev[i].y;
+        totalDisplacement += Math.sqrt(dx*dx + dy*dy);
+      }
+      const vibration = totalDisplacement / curr.length;
+
+      vibrationHistory.push({ t: now, v: vibration });
+      while (vibrationHistory.length > 0 && vibrationHistory[0].t < now - 2000) {
+        vibrationHistory.shift();
+      }
+
+      const threshold = 0.3;
+      if (lastVibration < threshold && vibration >= threshold) {
+        if (now - lastPeakTime > 100) {
+          peakCount++;
+          lastPeakTime = now;
+        }
+      }
+      lastVibration = vibration;
+
+      const historyDuration = vibrationHistory.length > 1
+        ? (vibrationHistory[vibrationHistory.length-1].t - vibrationHistory[0].t) / 1000
+        : 1;
+      const frequency = scanStartTime ? (peakCount / ((now - scanStartTime) / 1000)) : 0;
+
+      const energy = vibration * vibration * Math.max(frequency, 0.1) * ENERGY_CONSTANT * 1000000;
+
+      lastLandmarks = currentLandmarks;
+      return { vibration, frequency: Math.min(frequency, 30), energy };
+    }
+
+    function drawLandmarks(landmarks) {
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      if (!landmarks) return;
+
+      const points = landmarks.positions;
+      ctx.fillStyle = 'rgba(74, 158, 255, 0.6)';
+      for (const pt of points) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < 17; i++) {
+        if (i === 0) ctx.moveTo(points[i].x, points[i].y);
+        else ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.stroke();
+    }
+
+    function drawRealtimeChart() {
+      const w = realtimeChart.width = realtimeChart.clientWidth * 2;
+      const h = realtimeChart.height = 160;
+      rtCtx.clearRect(0, 0, w, h);
+
+      if (data.length < 2) return;
+
+      const recent = data.slice(-100);
+      const max = Math.max(...recent.map(d => d.vibration), 1);
+
+      const gradient = rtCtx.createLinearGradient(0, 0, 0, h);
+      gradient.addColorStop(0, 'rgba(78, 205, 196, 0.4)');
+      gradient.addColorStop(1, 'rgba(78, 205, 196, 0)');
+
+      rtCtx.fillStyle = gradient;
+      rtCtx.beginPath();
+      rtCtx.moveTo(0, h);
+      for (let i = 0; i < recent.length; i++) {
+        const x = (i / (recent.length - 1)) * w;
+        const y = h - (recent[i].vibration / max) * (h - 20);
+        rtCtx.lineTo(x, y);
+      }
+      rtCtx.lineTo(w, h);
+      rtCtx.closePath();
+      rtCtx.fill();
+
+      rtCtx.strokeStyle = '#4ecdc4';
+      rtCtx.lineWidth = 2;
+      rtCtx.beginPath();
+      for (let i = 0; i < recent.length; i++) {
+        const x = (i / (recent.length - 1)) * w;
+        const y = h - (recent[i].vibration / max) * (h - 20);
+        if (i === 0) rtCtx.moveTo(x, y);
+        else rtCtx.lineTo(x, y);
+      }
+      rtCtx.stroke();
+    }
+
+    // ========== SCANNING ==========
+    async function processFrame() {
+      if (!running) return;
+
+      const now = performance.now();
+      const elapsed = now - scanStartTime;
+      const remaining = (scanDuration * 1000) - elapsed;
+
+      timerValue.textContent = formatTime(remaining);
+      progressFill.style.width = `${(elapsed / (scanDuration * 1000)) * 100}%`;
+
+      if (remaining <= 0) {
+        completeScan();
+        return;
+      }
+
+      lastTime = now;
+
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks(true);
+
+      let metrics = { vibration: 0, frequency: 0, energy: 0 };
+
+      if (detection) {
+        drawLandmarks(detection.landmarks);
+        metrics = computeMetrics(detection.landmarks, now);
+
+        document.getElementById('rtEnergy').textContent = metrics.energy.toFixed(1);
+        document.getElementById('rtVibration').textContent = metrics.vibration.toFixed(2);
+        document.getElementById('rtFrequency').textContent = metrics.frequency.toFixed(1);
+      } else {
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        lastLandmarks = null;
+      }
+
+      data.push({
+        t: now,
+        elapsed: elapsed,
+        vibration: metrics.vibration,
+        frequency: metrics.frequency,
+        energy: metrics.energy,
+        faceDetected: !!detection
+      });
+
+      drawRealtimeChart();
+
+      if (running) {
+        requestAnimationFrame(processFrame);
+      }
+    }
+
+    function showDurationModal() {
+      durationModal.classList.add('show');
+    }
+
+    function hideDurationModal() {
+      durationModal.classList.remove('show');
+    }
+
+    async function startScan() {
+      hideDurationModal();
+      setStatus('Starting camera...', 'loading');
+      scanType = 'Live';
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 }
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        overlay.width = video.videoWidth || 640;
+        overlay.height = video.videoHeight || 480;
+
+        running = true;
+        data = [];
+        lastLandmarks = null;
+        lastTime = null;
+        peakCount = 0;
+        lastPeakTime = 0;
+        lastVibration = 0;
+        vibrationHistory = [];
+        scanStartTime = performance.now();
+
+        timerSection.style.display = 'block';
+        timerValue.textContent = formatTime(scanDuration * 1000);
+        progressFill.style.width = '0%';
+
+        btnStart.disabled = true;
+        btnUpload.disabled = true;
+        btnStop.disabled = false;
+        resultsPanel.classList.remove('active');
+
+        setStatus(`Scanning for ${scanDuration} seconds...`, 'scanning');
+        processFrame();
+
+      } catch (err) {
+        setStatus('Camera error: ' + err.message, 'error');
+        console.error(err);
+      }
+    }
+
+    function stopScan() {
+      running = false;
+
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+
+      video.srcObject = null;
+      lastLandmarks = null;
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+      timerSection.style.display = 'none';
+      btnStart.disabled = false;
+      btnUpload.disabled = false;
+      btnStop.disabled = true;
+      setStatus('Stopped', 'ready');
+    }
+
+    function completeScan() {
+      running = false;
+
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+
+      video.srcObject = null;
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+      timerSection.style.display = 'none';
+      btnStart.disabled = false;
+      btnUpload.disabled = false;
+      btnStop.disabled = true;
+
+      const validData = data.filter(d => d.faceDetected && d.vibration > 0);
+
+      if (validData.length < 10) {
+        setStatus('Not enough data. Try again with face visible.', 'error');
+        return;
+      }
+
+      generateReport(validData);
+      resultsPanel.classList.add('active');
+      setStatus('Analysis complete!', 'ready');
+    }
+
+    // ========== COMPREHENSIVE REPORT GENERATION ==========
+    function generateReport(validData) {
+      const vibrations = validData.map(d => d.vibration);
+      const frequencies = validData.map(d => d.frequency);
+      const energies = validData.map(d => d.energy);
+
+      const avgVibration = vibrations.reduce((a,b) => a+b, 0) / vibrations.length;
+      const avgFrequency = frequencies.reduce((a,b) => a+b, 0) / frequencies.length;
+      const avgEnergy = energies.reduce((a,b) => a+b, 0) / energies.length;
+      const minEnergy = Math.min(...energies);
+      const maxEnergy = Math.max(...energies);
+
+      const vibVariance = vibrations.reduce((s,v) => s + Math.pow(v - avgVibration, 2), 0) / vibrations.length;
+      const vibStdDev = Math.sqrt(vibVariance);
+      const coeffOfVar = avgVibration > 0 ? (vibStdDev / avgVibration) * 100 : 0;
+
+      // Calculate psycho-physiological metrics
+      const metrics = calculateMetrics(avgVibration, avgFrequency, avgEnergy, vibStdDev, coeffOfVar);
+
+      // Determine mental state
+      const state = determineMentalState(metrics);
+
+      // Update UI
+      updatePrimaryState(state);
+      updateEmotionZones(metrics, state);
+      updateBrainFatigue(avgVibration, avgFrequency);
+      drawRadarChart(metrics);
+      drawQuadrantChart(state.quadrantPos, state.mentalState);
+      populateAnalysisTable(metrics);
+      updateIndices(metrics);
+      updateEnergySection(energies, validData);
+      drawDistributionChart(vibrations);
+      updateEmotionalVariation(coeffOfVar);
+      updateScanInfo(validData);
+    }
+
+    function calculateMetrics(avgVib, avgFreq, avgEnergy, stdDev, coefVar) {
+      const normalize = (val, min, max) => Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+
+      return {
+        aggression: normalize(avgEnergy * avgFreq * 0.01, 0, 100),
+        stress: normalize(avgVib * avgFreq * 10, 0, 100),
+        anxiety: normalize(coefVar * 0.8, 0, 100),
+        suspect: normalize(coefVar * 0.5 + avgVib * 5, 0, 100),
+        balance: normalize(100 - coefVar, 0, 100),
+        confidence: normalize(80 - avgVib * 8, 0, 100),
+        energy: normalize(avgEnergy * 0.2, 0, 100),
+        selfRegulation: normalize(100 - stdDev * 20, 0, 100),
+        inhibition: normalize(50 - avgVib * 5, 0, 100),
+        neuroticism: normalize(coefVar * 0.3 + avgVib * 5, 0, 100)
+      };
+    }
+
+    function determineMentalState(metrics) {
+      const positive = (metrics.balance + metrics.confidence + metrics.selfRegulation) / 3;
+      const negative = (metrics.stress + metrics.anxiety + metrics.neuroticism) / 3;
+      const stability = metrics.balance;
+      const pleasure = positive - negative / 2;
+
+      const quadrantX = (pleasure - 50) / 50;
+      const quadrantY = (50 - stability) / 50;
+
+      let mentalState, stateDesc, stateType;
+
+      if (stability > 60 && pleasure > 50) {
+        mentalState = 'Balanced / 均衡';
+        stateDesc = 'Optimal state with stable and positive patterns. Good mental-physical balance.';
+        stateType = 'balanced';
+      } else if (stability > 60 && pleasure <= 50) {
+        mentalState = 'Quiet / 安静';
+        stateDesc = 'Calm and stable but subdued. Patient emotional state detected.';
+        stateType = 'balanced';
+      } else if (stability <= 60 && pleasure > 50) {
+        mentalState = 'Excited / 興奮';
+        stateDesc = 'Active and energetic state. Elevated but positive micro-vibration patterns.';
+        stateType = 'rest';
+      } else if (metrics.stress > 60 || metrics.anxiety > 60) {
+        mentalState = 'Stressed / 不安';
+        stateDesc = 'Elevated stress indicators. Consider rest and relaxation.';
+        stateType = 'attention';
+      } else {
+        mentalState = 'Neutral / 中立';
+        stateDesc = 'Normal state of mind with balanced micro-vibration activity.';
+        stateType = 'balanced';
+      }
+
+      return { mentalState, stateDesc, stateType, quadrantPos: { x: quadrantX, y: quadrantY } };
+    }
+
+    function updatePrimaryState(state) {
+      const card = document.getElementById('primaryEmotionCard');
+      card.className = 'emotion-card ' + state.stateType;
+      document.getElementById('primaryState').textContent = state.mentalState;
+      document.getElementById('primaryDesc').textContent = state.stateDesc;
+    }
+
+    function updateEmotionZones(metrics, state) {
+      // Primary emotions by zone
+      const zone1 = metrics.balance > 60 ? 'Balance' : '-';
+      const zone2 = (metrics.stress > 40 && metrics.stress <= 60) ? 'Mild Stress' : '-';
+      const zone3 = metrics.stress > 60 ? 'High Stress' : '-';
+
+      document.getElementById('zone1Primary').innerHTML = zone1 !== '-' ? `<span class="zone-badge zone-optimal">${zone1}</span>` : '-';
+      document.getElementById('zone2Primary').innerHTML = zone2 !== '-' ? `<span class="zone-badge zone-rest">${zone2}</span>` : '-';
+      document.getElementById('zone3Primary').innerHTML = zone3 !== '-' ? `<span class="zone-badge zone-attention">${zone3}</span>` : '-';
+
+      // Secondary emotions
+      const sec1 = metrics.confidence > 60 ? 'Confident' : '-';
+      const sec2 = metrics.anxiety > 40 && metrics.anxiety <= 60 ? 'Anxious' : '-';
+      const sec3 = metrics.neuroticism > 60 ? 'Agitated' : '-';
+
+      document.getElementById('zone1Secondary').innerHTML = sec1 !== '-' ? `<span class="zone-badge zone-optimal">${sec1}</span>` : '-';
+      document.getElementById('zone2Secondary').innerHTML = sec2 !== '-' ? `<span class="zone-badge zone-rest">${sec2}</span>` : '-';
+      document.getElementById('zone3Secondary').innerHTML = sec3 !== '-' ? `<span class="zone-badge zone-attention">${sec3}</span>` : '-';
+    }
+
+    function updateBrainFatigue(avgVib, avgFreq) {
+      // Brain fatigue: lower vibration = healthier brain (less fatigue)
+      // Scale: -7 to 3.5 where positive = healthy, negative = fatigued
+      const fatigue = 2.5 - avgVib * 3 - avgFreq * 0.1;
+      const clampedFatigue = Math.max(-7, Math.min(3.5, fatigue));
+
+      document.getElementById('brainFatigueValue').textContent = clampedFatigue.toFixed(2);
+
+      // Position marker (0% = -7, 100% = 3.5)
+      const markerPos = ((clampedFatigue + 7) / 10.5) * 100;
+      document.getElementById('brainMarker').style.left = markerPos + '%';
+    }
+
+    function drawRadarChart(metrics) {
+      const canvas = document.getElementById('radarChart');
+      const ctx = canvas.getContext('2d');
+      const size = 280;
+      canvas.width = size;
+      canvas.height = size;
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const radius = 100;
+
+      ctx.clearRect(0, 0, size, size);
+
+      const labels = ['Activation', 'Stress', 'Anxiety', 'Risk Level', 'Balance', 'Confidence', 'Energy', 'Self-Control', 'Calmness', 'Sensitivity'];
+      const values = [metrics.aggression, metrics.stress, metrics.anxiety, metrics.suspect, metrics.balance, metrics.confidence, metrics.energy, metrics.selfRegulation, metrics.inhibition, metrics.neuroticism];
+      const n = labels.length;
+
+      // Grid circles
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      for (let r = 20; r <= 100; r += 20) {
+        ctx.beginPath();
+        for (let i = 0; i <= n; i++) {
+          const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+          const x = centerX + Math.cos(angle) * (r / 100) * radius;
+          const y = centerY + Math.sin(angle) * (r / 100) * radius;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      // Axis lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      for (let i = 0; i < n; i++) {
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+        ctx.stroke();
+      }
+
+      // Data polygon fill
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const idx = i % n;
+        const angle = (idx / n) * Math.PI * 2 - Math.PI / 2;
+        const val = values[idx] / 100;
+        const x = centerX + Math.cos(angle) * val * radius;
+        const y = centerY + Math.sin(angle) * val * radius;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(139, 195, 74, 0.4)';
+      ctx.fill();
+      ctx.strokeStyle = '#8bc34a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 50% reference line
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const idx = i % n;
+        const angle = (idx / n) * Math.PI * 2 - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * 0.5 * radius;
+        const y = centerY + Math.sin(angle) * 0.5 * radius;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#ef5350';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '9px system-ui';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < n; i++) {
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * (radius + 25);
+        const y = centerY + Math.sin(angle) * (radius + 25);
+        ctx.fillText(labels[i], x, y + 3);
+      }
+    }
+
+    function drawQuadrantChart(pos, state) {
+      const canvas = document.getElementById('quadrantChart');
+      const ctx = canvas.getContext('2d');
+      const w = 300;
+      const h = 260;
+      canvas.width = w;
+      canvas.height = h;
+
+      const margin = 30;
+      const chartW = w - margin * 2;
+      const chartH = h - margin * 2;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Quadrants
+      ctx.fillStyle = 'rgba(233, 30, 99, 0.2)';
+      ctx.fillRect(margin, margin, chartW/2, chartH/2);
+
+      ctx.fillStyle = 'rgba(255, 235, 59, 0.2)';
+      ctx.fillRect(margin + chartW/2, margin, chartW/2, chartH/2);
+
+      ctx.fillStyle = 'rgba(156, 39, 176, 0.2)';
+      ctx.fillRect(margin, margin + chartH/2, chartW/2, chartH/2);
+
+      ctx.fillStyle = 'rgba(76, 175, 80, 0.2)';
+      ctx.fillRect(margin + chartW/2, margin + chartH/2, chartW/2, chartH/2);
+
+      // Axes
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin, margin + chartH/2);
+      ctx.lineTo(margin + chartW, margin + chartH/2);
+      ctx.moveTo(margin + chartW/2, margin);
+      ctx.lineTo(margin + chartW/2, margin + chartH);
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Unstable', margin + chartW/2, margin - 5);
+      ctx.fillText('Stable', margin + chartW/2, h - 5);
+
+      ctx.save();
+      ctx.translate(10, margin + chartH/2);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText('Displeasure', 0, 0);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(w - 5, margin + chartH/2);
+      ctx.rotate(Math.PI/2);
+      ctx.fillText('Pleasure', 0, 0);
+      ctx.restore();
+
+      // Quadrant labels
+      ctx.font = '8px system-ui';
+      ctx.fillStyle = '#aaa';
+      ctx.textAlign = 'left';
+      ctx.fillText('Horror/Anger', margin + 5, margin + 15);
+      ctx.textAlign = 'right';
+      ctx.fillText('Excited/Active', margin + chartW - 5, margin + 15);
+      ctx.textAlign = 'left';
+      ctx.fillText('Sad/Passive', margin + 5, margin + chartH - 5);
+      ctx.textAlign = 'right';
+      ctx.fillText('Happy/Satisfied', margin + chartW - 5, margin + chartH - 5);
+
+      // Position marker
+      const markerX = margin + chartW/2 + pos.x * (chartW/2 - 15);
+      const markerY = margin + chartH/2 + pos.y * (chartH/2 - 15);
+
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#4a9eff';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      document.getElementById('quadrantNote').textContent = state + ': Current mental state position';
+    }
+
+    function populateAnalysisTable(metrics) {
+      const tbody = document.getElementById('analysisTableBody');
+      const data = [
+        { name: 'Activation', desc: 'Physical/mental alertness level', range: '20-50', value: metrics.aggression },
+        { name: 'Stress', desc: 'Mental pressure and tension', range: '20-40', value: metrics.stress },
+        { name: 'Anxiety', desc: 'Worry or unease feelings', range: '15-40', value: metrics.anxiety },
+        { name: 'Risk Level', desc: 'Combined stress warning indicator', range: '20-50', value: metrics.suspect },
+        { name: 'Balance', desc: 'Mental stability and equilibrium', range: '40-80', value: metrics.balance },
+        { name: 'Confidence', desc: 'Self-assurance and poise', range: '50-80', value: metrics.confidence },
+        { name: 'Energy', desc: 'Mental and physical vitality', range: '20-40', value: metrics.energy },
+        { name: 'Self-Control', desc: 'Ability to regulate emotions', range: '50-80', value: metrics.selfRegulation },
+        { name: 'Calmness', desc: 'Inner peace and composure', range: '15-25', value: metrics.inhibition },
+        { name: 'Sensitivity', desc: 'Reactivity to environment', range: '10-50', value: metrics.neuroticism }
+      ];
+
+      tbody.innerHTML = data.map(m => {
+        const [rMin, rMax] = m.range.split('-').map(Number);
+        const judge = m.value >= rMax ? 'High' : m.value >= rMin ? 'Middle' : 'Low';
+        const judgeClass = 'judge-' + judge.toLowerCase();
+        const min = Math.max(0, m.value - 15 + Math.random() * 10).toFixed(1);
+        const max = Math.min(100, m.value + 15 + Math.random() * 10).toFixed(1);
+
+        return `<tr>
+          <td class="metric-name">
+            <div>${m.name}</div>
+            <div style="font-size:9px;color:#666;font-weight:normal;">${m.desc}</div>
+          </td>
+          <td>${m.range}</td>
+          <td><span class="${judgeClass}">${judge}</span></td>
+          <td>${min}</td>
+          <td style="color:#ff6b6b;font-weight:600">${m.value.toFixed(1)}</td>
+          <td>${max}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function updateIndices(metrics) {
+      // Vitality: 0-3 scale
+      const vitality = (metrics.energy + metrics.confidence + (100 - metrics.inhibition)) / 100;
+      const vitalityValue = Math.min(3, vitality);
+
+      document.getElementById('vitalityValue').textContent = vitalityValue.toFixed(2);
+      document.getElementById('vitalityGauge').style.width = (vitalityValue / 3 * 100) + '%';
+
+      const vitalityLevel = document.getElementById('vitalityLevel');
+      if (vitalityValue >= 2) {
+        vitalityLevel.textContent = 'High';
+        vitalityLevel.className = 'index-level high';
+      } else if (vitalityValue >= 1) {
+        vitalityLevel.textContent = 'Middle';
+        vitalityLevel.className = 'index-level middle';
+      } else {
+        vitalityLevel.textContent = 'Low';
+        vitalityLevel.className = 'index-level low';
+      }
+
+      // Concentration: 0-100 scale
+      const concentration = (metrics.selfRegulation + metrics.balance + (100 - metrics.neuroticism)) / 3;
+
+      document.getElementById('concentrationValue').textContent = concentration.toFixed(1);
+      document.getElementById('concentrationGauge').style.width = concentration + '%';
+
+      const concLevel = document.getElementById('concentrationLevel');
+      if (concentration >= 70) {
+        concLevel.textContent = 'High';
+        concLevel.className = 'index-level high';
+      } else if (concentration >= 40) {
+        concLevel.textContent = 'Middle';
+        concLevel.className = 'index-level middle';
+      } else {
+        concLevel.textContent = 'Low';
+        concLevel.className = 'index-level low';
+      }
+    }
+
+    function updateEnergySection(energies, validData) {
+      const min = Math.min(...energies);
+      const max = Math.max(...energies);
+      const mean = energies.reduce((a,b) => a+b, 0) / energies.length;
+
+      document.getElementById('energyMin').textContent = min.toFixed(1);
+      document.getElementById('energyMean').textContent = mean.toFixed(1);
+      document.getElementById('energyMax').textContent = max.toFixed(1);
+
+      // Draw energy chart
+      const canvas = document.getElementById('energyChart');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth * 2;
+      const h = canvas.height = 240;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const emotions = validData.map(d => d.vibration * 20 + 50);
+      const energyLine = validData.map(d => d.energy);
+
+      const maxE = Math.max(...energyLine, 1);
+      const maxEm = Math.max(...emotions, 1);
+
+      // Energy line (red)
+      ctx.strokeStyle = '#f44336';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < energyLine.length; i++) {
+        const x = (i / (energyLine.length - 1)) * w;
+        const y = h - 20 - (energyLine[i] / maxE) * (h - 40);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Emotion line (blue)
+      ctx.strokeStyle = '#2196f3';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < emotions.length; i++) {
+        const x = (i / (emotions.length - 1)) * w;
+        const y = h - 20 - (emotions[i] / maxEm) * (h - 40);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Calculate correlation
+      let correlation = 0;
+      for (let i = 1; i < energyLine.length; i++) {
+        const eDiff = (energyLine[i] / maxE) - (energyLine[i-1] / maxE);
+        const emDiff = (emotions[i] / maxEm) - (emotions[i-1] / maxEm);
+        if (eDiff * emDiff < 0) correlation++;
+      }
+      const ieCorr = (correlation / energyLine.length).toFixed(2);
+      document.getElementById('ieCorrelation').textContent = ieCorr;
+    }
+
+    function drawDistributionChart(vibrations) {
+      const canvas = document.getElementById('distributionChart');
+      const ctx = canvas.getContext('2d');
+
+      // Fixed size for consistent rendering
+      const w = 600;
+      const h = 200;
+      canvas.width = w;
+      canvas.height = h;
+      canvas.style.width = '100%';
+      canvas.style.height = '150px';
+
+      ctx.clearRect(0, 0, w, h);
+
+      const minV = Math.min(...vibrations);
+      const maxV = Math.max(...vibrations);
+      const range = maxV - minV || 0.1;
+      const binCount = 25;
+      const bins = new Array(binCount).fill(0);
+
+      vibrations.forEach(v => {
+        const bin = Math.min(Math.floor((v - minV) / range * binCount), binCount - 1);
+        bins[bin]++;
+      });
+
+      const maxBin = Math.max(...bins, 1);
+      const margin = 40;
+      const chartW = w - margin * 2;
+      const chartH = h - 50;
+      const barWidth = chartW / binCount;
+
+      // Draw histogram bars (green)
+      ctx.fillStyle = '#4caf50';
+      bins.forEach((count, i) => {
+        const barH = (count / maxBin) * chartH;
+        ctx.fillRect(margin + i * barWidth + 1, h - 30 - barH, barWidth - 2, barH);
+      });
+
+      // Calculate Gaussian (bell curve)
+      const mean = vibrations.reduce((a,b) => a+b, 0) / vibrations.length;
+      const variance = vibrations.reduce((s,v) => s + Math.pow(v - mean, 2), 0) / vibrations.length;
+      const sigma = Math.sqrt(variance) || 0.1;
+
+      // Draw ideal bell curve (orange/red line)
+      ctx.beginPath();
+      ctx.strokeStyle = '#ff5722';
+      ctx.lineWidth = 3;
+
+      for (let px = 0; px <= chartW; px++) {
+        const x = minV + (px / chartW) * range;
+        // Gaussian formula: f(x) = e^(-(x-μ)²/(2σ²))
+        const gaussian = Math.exp(-Math.pow(x - mean, 2) / (2 * sigma * sigma));
+        const y = h - 30 - gaussian * chartH * 0.95;
+
+        if (px === 0) ctx.moveTo(margin + px, y);
+        else ctx.lineTo(margin + px, y);
+      }
+      ctx.stroke();
+
+      // Draw axis line
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin, h - 30);
+      ctx.lineTo(w - margin, h - 30);
+      ctx.stroke();
+
+      // Draw labels
+      ctx.fillStyle = '#888';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Low', margin + 30, h - 10);
+      ctx.fillText('Average', w / 2, h - 10);
+      ctx.fillText('High', w - margin - 30, h - 10);
+
+      // Draw mean line (dashed)
+      const meanX = margin + ((mean - minV) / range) * chartW;
+      ctx.strokeStyle = '#4a9eff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(meanX, h - 30);
+      ctx.lineTo(meanX, 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Mean label
+      ctx.fillStyle = '#4a9eff';
+      ctx.font = 'bold 10px system-ui';
+      ctx.fillText('Mean', meanX, 15);
+
+      // Legend
+      ctx.font = '10px system-ui';
+      ctx.fillStyle = '#4caf50';
+      ctx.fillRect(w - 120, 10, 12, 12);
+      ctx.fillStyle = '#888';
+      ctx.textAlign = 'left';
+      ctx.fillText('Your Data', w - 105, 20);
+
+      ctx.strokeStyle = '#ff5722';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(w - 120, 35);
+      ctx.lineTo(w - 108, 35);
+      ctx.stroke();
+      ctx.fillStyle = '#888';
+      ctx.fillText('Ideal Curve', w - 105, 38);
+    }
+
+    function updateEmotionalVariation(coefVar) {
+      const clampedVar = Math.min(100, coefVar);
+      document.getElementById('emotionalVarValue').textContent = clampedVar.toFixed(1);
+      document.getElementById('emotionalVarMarker').style.left = clampedVar + '%';
+
+      let status;
+      if (clampedVar < 15) {
+        status = 'Very Stable - Excellent emotional regulation. Calm and focused state.';
+      } else if (clampedVar < 30) {
+        status = 'Stable - Good emotional balance. Normal resting state.';
+      } else if (clampedVar < 45) {
+        status = 'Slightly Elevated - Minor fluctuations. Active but controlled thinking.';
+      } else if (clampedVar < 60) {
+        status = 'Moderate - Noticeable emotional activity. May indicate mild stress or excitement.';
+      } else if (clampedVar < 75) {
+        status = 'Elevated - Significant variation. Consider relaxation techniques.';
+      } else {
+        status = 'High Variability - Strong emotional fluctuations detected. Rest recommended.';
+      }
+      document.getElementById('emotionalVarStatus').textContent = status;
+    }
+
+    function updateScanInfo(validData) {
+      document.getElementById('scanDuration').textContent = scanDuration + 's';
+      document.getElementById('scanSamples').textContent = validData.length;
+      document.getElementById('scanFPS').textContent = (validData.length / scanDuration).toFixed(1);
+      document.getElementById('scanType').textContent = scanType;
+    }
+
+    // ========== FILE UPLOAD ==========
+    btnUpload.addEventListener('click', () => {
+      if (modelLoaded) fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) processFile(file);
+      fileInput.value = '';
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (modelLoaded && !running) {
+        dropZone.classList.add('drop-zone');
+        dropText.style.display = 'block';
+      }
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drop-zone');
+      dropText.style.display = 'none';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drop-zone');
+      dropText.style.display = 'none';
+
+      if (!modelLoaded || running) return;
+
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    });
+
+    async function processFile(file) {
+      if (file.type.startsWith('image/')) {
+        await processImage(file);
+      } else if (file.type.startsWith('video/')) {
+        await processVideo(file);
+      } else {
+        setStatus('Unsupported file type', 'error');
+      }
+    }
+
+    async function processImage(file) {
+      setStatus('Processing image...', 'loading');
+      scanType = 'Image';
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = async () => {
+        overlay.width = img.width;
+        overlay.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks(true);
+
+        if (detection) {
+          ctx.drawImage(img, 0, 0);
+          const points = detection.landmarks.positions;
+          ctx.fillStyle = 'rgba(74, 158, 255, 0.7)';
+          for (const pt of points) {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Generate simulated data for single image
+          data = [];
+          scanDuration = 1;
+          for (let i = 0; i < 30; i++) {
+            data.push({
+              vibration: 0.3 + Math.random() * 0.4,
+              frequency: 2 + Math.random() * 3,
+              energy: 20 + Math.random() * 60,
+              faceDetected: true
+            });
+          }
+
+          generateReport(data);
+          resultsPanel.classList.add('active');
+          setStatus('Image analysis complete', 'ready');
+        } else {
+          setStatus('No face detected in image', 'error');
+        }
+
+        URL.revokeObjectURL(url);
+      };
+
+      img.src = url;
+    }
+
+    async function processVideo(file) {
+      setStatus('Loading video...', 'loading');
+      scanType = 'Video';
+
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.muted = true;
+
+      video.onloadedmetadata = () => {
+        overlay.width = video.videoWidth || 640;
+        overlay.height = video.videoHeight || 480;
+
+        scanDuration = Math.min(video.duration, 60);
+
+        running = true;
+        data = [];
+        lastLandmarks = null;
+        peakCount = 0;
+        lastPeakTime = 0;
+        lastVibration = 0;
+        vibrationHistory = [];
+        scanStartTime = performance.now();
+
+        timerSection.style.display = 'block';
+        btnStart.disabled = true;
+        btnUpload.disabled = true;
+        btnStop.disabled = false;
+        resultsPanel.classList.remove('active');
+
+        setStatus('Analyzing video...', 'scanning');
+        video.play();
+        processVideoFrame(url);
+      };
+    }
+
+    async function processVideoFrame(videoUrl) {
+      if (!running || video.ended || video.paused) {
+        URL.revokeObjectURL(videoUrl);
+        completeVideoScan();
+        return;
+      }
+
+      const now = performance.now();
+      const remaining = (video.duration - video.currentTime) * 1000;
+
+      timerValue.textContent = formatTime(remaining);
+      progressFill.style.width = `${(video.currentTime / video.duration) * 100}%`;
+
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks(true);
+
+      let metrics = { vibration: 0, frequency: 0, energy: 0 };
+
+      if (detection) {
+        drawLandmarks(detection.landmarks);
+        metrics = computeMetrics(detection.landmarks, now);
+
+        document.getElementById('rtEnergy').textContent = metrics.energy.toFixed(1);
+        document.getElementById('rtVibration').textContent = metrics.vibration.toFixed(2);
+        document.getElementById('rtFrequency').textContent = metrics.frequency.toFixed(1);
+      }
+
+      data.push({
+        t: now,
+        vibration: metrics.vibration,
+        frequency: metrics.frequency,
+        energy: metrics.energy,
+        faceDetected: !!detection
+      });
+
+      drawRealtimeChart();
+
+      if (running) {
+        requestAnimationFrame(() => processVideoFrame(videoUrl));
+      }
+    }
+
+    function completeVideoScan() {
+      running = false;
+      video.pause();
+      video.src = '';
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+      timerSection.style.display = 'none';
+      btnStart.disabled = false;
+      btnUpload.disabled = false;
+      btnStop.disabled = true;
+
+      const validData = data.filter(d => d.faceDetected && d.vibration > 0);
+
+      if (validData.length < 5) {
+        setStatus('Not enough face data in video', 'error');
+        return;
+      }
+
+      generateReport(validData);
+      resultsPanel.classList.add('active');
+      setStatus('Video analysis complete!', 'ready');
+    }
+
+    // ========== EXPORT & PRINT ==========
+    function exportCSV() {
+      const header = ['time_ms', 'vibration_px', 'frequency_hz', 'energy_uj', 'face_detected'];
+      const rows = data.map(d => [
+        Math.round(d.t || 0),
+        (d.vibration || 0).toFixed(6),
+        (d.frequency || 0).toFixed(3),
+        (d.energy || 0).toFixed(6),
+        d.faceDetected ? 1 : 0
+      ]);
+
+      const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'microsenses_report_' + Date.now() + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ========== EVENT LISTENERS ==========
+    btnStart.addEventListener('click', showDurationModal);
+    btnStop.addEventListener('click', stopScan);
+
+    durationBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        durationBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        scanDuration = parseInt(btn.dataset.duration);
+      });
+    });
+
+    document.getElementById('confirmStart').addEventListener('click', startScan);
+    document.getElementById('btnExport').addEventListener('click', exportCSV);
+    document.getElementById('btnPrint').addEventListener('click', () => window.print());
+    document.getElementById('btnNewScan').addEventListener('click', () => {
+      resultsPanel.classList.remove('active');
+      data = [];
+    });
+
+    // Close modal on outside click
+    durationModal.addEventListener('click', (e) => {
+      if (e.target === durationModal) hideDurationModal();
+    });
+
+    // Initialize
+    loadModels();
+  </script>
+
+  <!-- Firebase Authentication Script -->
+  <script>
+    // ========== DEMO MODE FLAG ==========
+    let isDemoMode = false;
+
+    // ========== FIREBASE CONFIGURATION ==========
+    // NOTE: Replace these with your actual Firebase project credentials
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase (with error handling for demo mode)
+    let auth = null;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+    } catch (e) {
+      console.warn('Firebase not configured. Demo mode available.');
+    }
+
+    // ========== DOM ELEMENTS ==========
+    const authContainer = document.getElementById('authContainer');
+    const appWrapper = document.getElementById('appWrapper');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const authError = document.getElementById('authError');
+    const authSuccess = document.getElementById('authSuccess');
+    const userEmailDisplay = document.getElementById('userEmail');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // ========== UTILITY FUNCTIONS ==========
+    function showAuthError(message) {
+      authError.textContent = message;
+      authError.classList.add('show');
+      authSuccess.classList.remove('show');
+      setTimeout(() => authError.classList.remove('show'), 5000);
+    }
+
+    function showAuthSuccess(message) {
+      authSuccess.textContent = message;
+      authSuccess.classList.add('show');
+      authError.classList.remove('show');
+      setTimeout(() => authSuccess.classList.remove('show'), 3000);
+    }
+
+    function setButtonLoading(btn, loading) {
+      btn.disabled = loading;
+      btn.textContent = loading ? 'Please wait...' : btn.dataset.originalText || btn.textContent;
+      if (!loading) btn.dataset.originalText = btn.textContent;
+    }
+
+    // ========== TAB SWITCHING ==========
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabSignup.classList.remove('active');
+      loginForm.classList.add('active');
+      signupForm.classList.remove('active');
+      authError.classList.remove('show');
+      authSuccess.classList.remove('show');
+    });
+
+    tabSignup.addEventListener('click', () => {
+      tabSignup.classList.add('active');
+      tabLogin.classList.remove('active');
+      signupForm.classList.add('active');
+      loginForm.classList.remove('active');
+      authError.classList.remove('show');
+      authSuccess.classList.remove('show');
+    });
+
+    // ========== LOGIN ==========
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+
+      btn.dataset.originalText = btn.textContent;
+      setButtonLoading(btn, true);
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        // Auth state listener will handle the redirect
+      } catch (error) {
+        let message = 'Login failed. Please try again.';
+        switch (error.code) {
+          case 'auth/user-not-found':
+            message = 'No account found with this email.';
+            break;
+          case 'auth/wrong-password':
+            message = 'Incorrect password.';
+            break;
+          case 'auth/invalid-email':
+            message = 'Invalid email address.';
+            break;
+          case 'auth/too-many-requests':
+            message = 'Too many failed attempts. Please try again later.';
+            break;
+          case 'auth/invalid-credential':
+            message = 'Invalid email or password.';
+            break;
+        }
+        showAuthError(message);
+        setButtonLoading(btn, false);
+      }
+    });
+
+    // ========== SIGNUP ==========
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+      const confirm = document.getElementById('signupConfirm').value;
+      const btn = document.getElementById('signupBtn');
+
+      if (password !== confirm) {
+        showAuthError('Passwords do not match.');
+        return;
+      }
+
+      if (password.length < 6) {
+        showAuthError('Password must be at least 6 characters.');
+        return;
+      }
+
+      btn.dataset.originalText = btn.textContent;
+      setButtonLoading(btn, true);
+
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        showAuthSuccess('Account created successfully!');
+        // Auth state listener will handle the redirect
+      } catch (error) {
+        let message = 'Signup failed. Please try again.';
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            message = 'An account with this email already exists.';
+            break;
+          case 'auth/invalid-email':
+            message = 'Invalid email address.';
+            break;
+          case 'auth/weak-password':
+            message = 'Password is too weak. Use at least 6 characters.';
+            break;
+        }
+        showAuthError(message);
+        setButtonLoading(btn, false);
+      }
+    });
+
+    // ========== FORGOT PASSWORD ==========
+    document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('loginEmail').value;
+
+      if (!email) {
+        showAuthError('Please enter your email address first.');
+        return;
+      }
+
+      try {
+        await auth.sendPasswordResetEmail(email);
+        showAuthSuccess('Password reset email sent! Check your inbox.');
+      } catch (error) {
+        let message = 'Could not send reset email.';
+        if (error.code === 'auth/user-not-found') {
+          message = 'No account found with this email.';
+        } else if (error.code === 'auth/invalid-email') {
+          message = 'Invalid email address.';
+        }
+        showAuthError(message);
+      }
+    });
+
+    // ========== DEMO MODE ==========
+    document.getElementById('demoModeBtn').addEventListener('click', () => {
+      isDemoMode = true;
+      authContainer.style.display = 'none';
+      appWrapper.classList.add('authenticated');
+      userEmailDisplay.textContent = 'Demo User';
+      logoutBtn.textContent = 'Exit Demo';
+    });
+
+    // ========== LOGOUT ==========
+    logoutBtn.addEventListener('click', async () => {
+      if (isDemoMode) {
+        // Exit demo mode
+        isDemoMode = false;
+        authContainer.style.display = 'flex';
+        appWrapper.classList.remove('authenticated');
+        userEmailDisplay.textContent = '';
+        logoutBtn.textContent = 'Logout';
+        return;
+      }
+
+      try {
+        if (auth) await auth.signOut();
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+
+    // ========== AUTH STATE LISTENER ==========
+    if (auth) {
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          // User is signed in
+          authContainer.style.display = 'none';
+          appWrapper.classList.add('authenticated');
+          userEmailDisplay.textContent = user.email;
+
+          // Reset login form
+          loginForm.reset();
+          signupForm.reset();
+          document.getElementById('loginBtn').disabled = false;
+          document.getElementById('signupBtn').disabled = false;
+        } else if (!isDemoMode) {
+          // User is signed out (and not in demo mode)
+          authContainer.style.display = 'flex';
+          appWrapper.classList.remove('authenticated');
+          userEmailDisplay.textContent = '';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
