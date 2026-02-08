@@ -858,8 +858,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
-  <!-- face-api.js -->
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <!-- face-api.js — vladmandic fork (matches model source) -->
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 
   <script>
     // ========== DOM ELEMENTS ==========
@@ -1050,33 +1050,49 @@
 
       lastTime = now;
 
-      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks(true);
+      try {
+        // Guard: ensure video is playing and has dimensions
+        if (video.readyState < 2 || video.videoWidth === 0) {
+          if (running) requestAnimationFrame(processFrame);
+          return;
+        }
 
-      let metrics = { vibration: 0, frequency: 0, energy: 0 };
+        // Sync overlay size if video dimensions changed
+        if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+          overlay.width = video.videoWidth;
+          overlay.height = video.videoHeight;
+        }
 
-      if (detection) {
-        drawLandmarks(detection.landmarks);
-        metrics = computeMetrics(detection.landmarks, now);
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks(true);
 
-        document.getElementById('rtEnergy').textContent = metrics.energy.toFixed(1);
-        document.getElementById('rtVibration').textContent = metrics.vibration.toFixed(2);
-        document.getElementById('rtFrequency').textContent = metrics.frequency.toFixed(1);
-      } else {
-        ctx.clearRect(0, 0, overlay.width, overlay.height);
-        lastLandmarks = null;
+        let metrics = { vibration: 0, frequency: 0, energy: 0 };
+
+        if (detection) {
+          drawLandmarks(detection.landmarks);
+          metrics = computeMetrics(detection.landmarks, now);
+
+          document.getElementById('rtEnergy').textContent = metrics.energy.toFixed(1);
+          document.getElementById('rtVibration').textContent = metrics.vibration.toFixed(2);
+          document.getElementById('rtFrequency').textContent = metrics.frequency.toFixed(1);
+        } else {
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
+          lastLandmarks = null;
+        }
+
+        data.push({
+          t: now,
+          elapsed: elapsed,
+          vibration: metrics.vibration,
+          frequency: metrics.frequency,
+          energy: metrics.energy,
+          faceDetected: !!detection
+        });
+
+        drawRealtimeChart();
+      } catch (err) {
+        console.warn('Frame processing error:', err.message);
       }
-
-      data.push({
-        t: now,
-        elapsed: elapsed,
-        vibration: metrics.vibration,
-        frequency: metrics.frequency,
-        energy: metrics.energy,
-        faceDetected: !!detection
-      });
-
-      drawRealtimeChart();
 
       if (running) {
         requestAnimationFrame(processFrame);
@@ -1096,43 +1112,103 @@
       setStatus('Starting camera...', 'loading');
       scanType = 'Live';
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 }
-        });
-
-        video.srcObject = stream;
-        await video.play();
-
-        overlay.width = video.videoWidth || 640;
-        overlay.height = video.videoHeight || 480;
-
-        running = true;
-        data = [];
-        lastLandmarks = null;
-        lastTime = null;
-        peakCount = 0;
-        lastPeakTime = 0;
-        lastVibration = 0;
-        vibrationHistory = [];
-        scanStartTime = performance.now();
-
-        timerSection.style.display = 'block';
-        timerValue.textContent = formatTime(scanDuration * 1000);
-        progressFill.style.width = '0%';
-
-        btnStart.disabled = true;
-        btnUpload.disabled = true;
-        btnStop.disabled = false;
-        resultsPanel.classList.remove('active');
-
-        setStatus(`Scanning for ${scanDuration} seconds...`, 'scanning');
-        processFrame();
-
-      } catch (err) {
-        setStatus('Camera error: ' + err.message, 'error');
-        console.error(err);
+      // Stop any existing stream
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+        video.srcObject = null;
       }
+
+      // Progressive fallback constraints
+      const constraintsList = [
+        { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 } }, audio: false },
+        { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: { facingMode: 'user' }, audio: false },
+        { video: true, audio: false }
+      ];
+
+      let lastErr = null;
+      for (const constraints of constraintsList) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          break;
+        } catch (err) {
+          lastErr = err;
+          console.warn('Camera attempt failed:', err.name);
+        }
+      }
+
+      if (!stream) {
+        const errName = lastErr ? lastErr.name : 'Unknown';
+        if (errName === 'NotAllowedError') {
+          setStatus('Camera permission denied. Please allow camera access.', 'error');
+        } else if (errName === 'NotFoundError') {
+          setStatus('No camera found on this device.', 'error');
+        } else {
+          setStatus('Camera error: ' + (lastErr ? lastErr.message : 'unknown'), 'error');
+        }
+        return;
+      }
+
+      video.srcObject = stream;
+
+      // Wait for video metadata
+      await new Promise((resolve) => {
+        if (video.readyState >= 1) resolve();
+        else video.onloadedmetadata = () => resolve();
+      });
+
+      try {
+        await video.play();
+      } catch (playErr) {
+        console.warn('video.play() failed, retrying...', playErr);
+        await new Promise(r => setTimeout(r, 300));
+        try { await video.play(); } catch (e) {
+          setStatus('Could not start video playback.', 'error');
+          return;
+        }
+      }
+
+      overlay.width = video.videoWidth || 640;
+      overlay.height = video.videoHeight || 480;
+
+      // Handle camera disconnecting mid-scan
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        track.onended = () => {
+          if (running) {
+            setStatus('Camera disconnected. Stopping scan.', 'error');
+            running = false;
+            stream = null;
+            timerSection.style.display = 'none';
+            btnStart.disabled = false;
+            btnUpload.disabled = false;
+            btnStop.disabled = true;
+          }
+        };
+      }
+
+      running = true;
+      data = [];
+      lastLandmarks = null;
+      lastTime = null;
+      peakCount = 0;
+      lastPeakTime = 0;
+      lastVibration = 0;
+      vibrationHistory = [];
+      scanStartTime = performance.now();
+
+      timerSection.style.display = 'block';
+      timerValue.textContent = formatTime(scanDuration * 1000);
+      progressFill.style.width = '0%';
+
+      btnStart.disabled = true;
+      btnUpload.disabled = true;
+      btnStop.disabled = false;
+      resultsPanel.classList.remove('active');
+
+      setStatus(`Scanning for ${scanDuration} seconds...`, 'scanning');
+      processFrame();
     }
 
     function stopScan() {
@@ -1850,11 +1926,18 @@
       setStatus('Loading video...', 'loading');
       scanType = 'Video';
 
+      // Stop any live camera stream first
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      video.srcObject = null; // MUST clear srcObject so video.src is used
+
       const url = URL.createObjectURL(file);
       video.src = url;
       video.muted = true;
 
-      video.onloadedmetadata = () => {
+      video.onloadedmetadata = async () => {
         overlay.width = video.videoWidth || 640;
         overlay.height = video.videoHeight || 480;
 
@@ -1876,7 +1959,20 @@
         resultsPanel.classList.remove('active');
 
         setStatus('Analyzing video...', 'scanning');
-        video.play();
+        try {
+          await video.play();
+        } catch (playErr) {
+          console.warn('Video play failed:', playErr);
+          await new Promise(r => setTimeout(r, 300));
+          try { await video.play(); } catch (e) {
+            setStatus('Could not play video file.', 'error');
+            running = false;
+            btnStart.disabled = false;
+            btnUpload.disabled = false;
+            btnStop.disabled = true;
+            return;
+          }
+        }
         processVideoFrame(url);
       };
     }
@@ -1894,29 +1990,39 @@
       timerValue.textContent = formatTime(remaining);
       progressFill.style.width = `${(video.currentTime / video.duration) * 100}%`;
 
-      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks(true);
+      try {
+        // Guard: ensure video has valid frame data
+        if (video.readyState < 2 || video.videoWidth === 0) {
+          if (running) requestAnimationFrame(() => processVideoFrame(videoUrl));
+          return;
+        }
 
-      let metrics = { vibration: 0, frequency: 0, energy: 0 };
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks(true);
 
-      if (detection) {
-        drawLandmarks(detection.landmarks);
-        metrics = computeMetrics(detection.landmarks, now);
+        let metrics = { vibration: 0, frequency: 0, energy: 0 };
 
-        document.getElementById('rtEnergy').textContent = metrics.energy.toFixed(1);
-        document.getElementById('rtVibration').textContent = metrics.vibration.toFixed(2);
-        document.getElementById('rtFrequency').textContent = metrics.frequency.toFixed(1);
+        if (detection) {
+          drawLandmarks(detection.landmarks);
+          metrics = computeMetrics(detection.landmarks, now);
+
+          document.getElementById('rtEnergy').textContent = metrics.energy.toFixed(1);
+          document.getElementById('rtVibration').textContent = metrics.vibration.toFixed(2);
+          document.getElementById('rtFrequency').textContent = metrics.frequency.toFixed(1);
+        }
+
+        data.push({
+          t: now,
+          vibration: metrics.vibration,
+          frequency: metrics.frequency,
+          energy: metrics.energy,
+          faceDetected: !!detection
+        });
+
+        drawRealtimeChart();
+      } catch (err) {
+        console.warn('Video frame error:', err.message);
       }
-
-      data.push({
-        t: now,
-        vibration: metrics.vibration,
-        frequency: metrics.frequency,
-        energy: metrics.energy,
-        faceDetected: !!detection
-      });
-
-      drawRealtimeChart();
 
       if (running) {
         requestAnimationFrame(() => processVideoFrame(videoUrl));
